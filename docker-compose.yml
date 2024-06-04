@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: mycoffee
+      WORDPRESS_DB_PASSWORD: secret
+      WORDPRESS_DB_NAME: mycoffee_shop
+    volumes:
+      - './wordpress:/var/www/html'
+    networks:
+      - mycoffee-network
+    labels:
+      - 'traefik.enable=true' # Explicitly tell Traefik to manage this container
+      - 'traefik.http.routers.wordpress.rule=Host(`my-coffee.shop`)' # Define the rule under which this serice is running
+      - 'traefik.http.routers.wordpress.entrypoints=websecure' # Specify the entrypoints for this service
+      - 'traefik.http.routers.wordpress.tls=true' # Enable TLS for this service
+      - 'traefik.http.routers.wordpress.tls.certresolver=myCoffeeResolver' # Use the defined certificate resolver for HTTPS
+
+  mysql:
+    platform: linux/x86_64
+    image: 'mysql:5.7'
+    container_name: 'mysql'
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: supersecret
+      MYSQL_USER: mycoffee
+      MYSQL_PASSWORD: secret
+      MYSQL_DATABASE: mycoffee_shop
+    volumes:
+      - './mysql:/var/www/mysql'
+    networks:
+      - mycoffee-network
+    ports:
+      - 3306:3306
+
+networks:
+  mycoffee-network:
+    external: true
